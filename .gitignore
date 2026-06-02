@@ -1,0 +1,11 @@
+node_modules/
+.env
+*.db
+*.db-shm
+*.db-wal
+.claude/
+req.txt
+PLAN.md
+CLAUDE.md
+AGENTS.md
+

@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block title %}PFIC Report — Analyze Tickers{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>PFIC Analysis Tool</h1>
+  <p>Paste a list of stock tickers to run the PFIC income and asset tests using EODHD data.</p>
+</section>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<form id="analyze-form" action="/api/analyze" method="POST">
+  <div class="input-group">
+    <label for="tickers">
+      Tickers
+      <span class="hint">One per line, or comma-separated. Symbols without an exchange suffix default to <strong>.US</strong> (e.g. AAPL → AAPL.US). For foreign listings include the suffix (e.g. HSBC.LSE).</span>
+    </label>
+    <textarea
+      id="tickers"
+      name="tickers"
+      rows="10"
+      placeholder="AAPL&#10;MSFT&#10;7203.TSE&#10;NESN.SW"
+      spellcheck="false"
+      autocomplete="off"
+    ></textarea>
+  </div>
+  <button type="submit" class="btn btn-primary" id="submit-btn">
+    Run PFIC Analysis
+  </button>
+</form>
+
+<div id="spinner" class="spinner hidden" aria-live="polite">
+  <div class="spinner-icon"></div>
+  <p>Fetching data and running calculations&hellip;</p>
+</div>
+
+<script src="/js/analyze.js"></script>
+{% endblock %}

@@ -1,0 +1,382 @@
+{% extends "layout.html" %}
+{% block title %}PFIC Results — {{ summary.uniqueAnalyzed }} Tickers{% endblock %}
+{% block content %}
+
+{# ── Dashboard ──────────────────────────────────────────────────────────── #}
+<section class="dashboard no-print">
+  <div class="dashboard-inner">
+    <div class="dashboard-summary">
+      <span>Pasted <strong>{{ summary.totalPasted }}</strong></span>
+      {% if summary.duplicatesRemoved > 0 %}
+      <span class="sep">·</span>
+      <span><strong>{{ summary.duplicatesRemoved }}</strong> duplicate{{ 's' if summary.duplicatesRemoved != 1 }} removed</span>
+      {% endif %}
+      <span class="sep">·</span>
+      <span><strong>{{ summary.uniqueAnalyzed }}</strong> analyzed</span>
+    </div>
+
+    <div class="category-badges">
+      <button class="badge badge-all active" data-filter="all">
+        <span class="badge-label">All</span>
+        <span class="badge-count">{{ summary.uniqueAnalyzed }}</span>
+      </button>
+      <button class="badge badge-yes" data-filter="pfic_yes">
+        <span class="badge-label">PFIC — Yes</span>
+        <span class="badge-count">{{ summary.pfic_yes }}</span>
+      </button>
+      <button class="badge badge-no" data-filter="pfic_no">
+        <span class="badge-label">PFIC — No</span>
+        <span class="badge-count">{{ summary.pfic_no }}</span>
+      </button>
+      <button class="badge badge-unknown" data-filter="unable_to_determine">
+        <span class="badge-label">Unable to Determine</span>
+        <span class="badge-count">{{ summary.unable_to_determine }}</span>
+      </button>
+      <button class="badge badge-unsuitable" data-filter="not_suitable">
+        <span class="badge-label">Not Suitable</span>
+        <span class="badge-count">{{ summary.not_suitable }}</span>
+      </button>
+      <button class="badge badge-review" data-filter="manual_review">
+        <span class="badge-label">Manual Review</span>
+        <span class="badge-count">{{ summary.manual_review }}</span>
+      </button>
+      {% if summary.duplicatesRemoved > 0 %}
+      <button class="badge badge-dupes" data-filter="duplicates">
+        <span class="badge-label">Duplicates</span>
+        <span class="badge-count">{{ summary.duplicatesRemoved }}</span>
+      </button>
+      {% endif %}
+    </div>
+
+    <div class="action-bar">
+      <button onclick="window.print()" class="btn btn-secondary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / PDF
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCsv('full','all')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export All CSV
+      </button>
+      <button class="btn btn-primary btn-sm" id="structured-export-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Export Structured…
+      </button>
+      <a href="/" class="btn btn-ghost btn-sm">← New Analysis</a>
+    </div>
+  </div>
+</section>
+
+{# ── Duplicates panel ──────────────────────────────────────────────────── #}
+{% if summary.duplicates and summary.duplicates.length > 0 %}
+<div id="duplicates-panel" class="duplicates-panel hidden no-print">
+  <div class="container">
+    <h3>Removed Duplicates</h3>
+    <p>These tickers appeared more than once and were analyzed only once:</p>
+    <div class="dupe-list">
+      {% for d in summary.duplicates %}<code class="ticker-chip">{{ d }}</code>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Result cards ─────────────────────────────────────────────────────── #}
+<section class="cards-section">
+  <div class="container">
+  {% for r in results %}
+  <article class="result-card result-{{ r.pficResult }}" data-result="{{ r.pficResult }}" id="card-{{ r.ticker | replace('.', '-') }}">
+
+    {# ── Card header ── #}
+    <div class="card-header">
+      <div class="card-title">
+        <h2>{{ r.companyInfo.name if r.companyInfo and r.companyInfo.name else r.ticker }}</h2>
+        <div class="card-meta">
+          <code class="ticker-badge">{{ r.ticker }}</code>
+          {% if r.companyInfo and r.companyInfo.exchange %}<span class="meta-sep">·</span><span>{{ r.companyInfo.exchange }}</span>{% endif %}
+          {% if r.companyInfo and r.companyInfo.country %}<span class="meta-sep">·</span><span>{{ r.companyInfo.country }}</span>{% endif %}
+          {% if r.companyInfo and r.companyInfo.type %}<span class="meta-sep">·</span><span>{{ r.companyInfo.type }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="pfic-stamp pfic-stamp-{{ r.pficResult }}">
+        {{ resultLabel(r.pficResult) }}
+      </div>
+    </div>
+
+    {# ── 1. Company info ── #}
+    <div class="card-section">
+      <h3 class="section-heading"><span class="section-num">1</span>Company Information</h3>
+      {% if r.companyInfo %}
+      <table class="info-table">
+        <tbody>
+          <tr><th>Currency</th><td>{{ r.companyInfo.currency or '—' }}</td>
+              <th>Fiscal Year End</th><td>{{ r.companyInfo.fiscalYearEnd or '—' }}</td></tr>
+          <tr><th>Exchange</th><td>{{ r.companyInfo.exchange or '—' }}</td>
+              <th>Country</th><td>{{ r.companyInfo.country or '—' }}</td></tr>
+          <tr><th>Security Type</th><td colspan="3">{{ r.companyInfo.type or '—' }}</td></tr>
+          {% if r.companyInfo.isin %}<tr><th>ISIN</th><td colspan="3">{{ r.companyInfo.isin }}</td></tr>{% endif %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="data-missing">No company data returned by API.</p>
+      {% endif %}
+    </div>
+
+    {# ── 2. Annual income ── #}
+    <div class="card-section">
+      <h3 class="section-heading">
+        <span class="section-num">2</span>Annual Income Statement
+        {% if r.incomeData and r.incomeData.period %}<span class="period">{{ r.incomeData.period }}</span>{% endif %}
+      </h3>
+      {% if r.incomeData and r.incomeData.available %}
+      {% set f = r.incomeData.fields %}
+      <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr><th>Field</th><th>Value ({{ r.companyInfo.currency if r.companyInfo else '?' }})</th><th>Used in Test</th></tr>
+        </thead>
+        <tbody>
+          <tr class="{{ 'row-key' if f.totalRevenue != null else 'row-missing' }}">
+            <td>Total Revenue</td><td class="num">{{ f.totalRevenue | numFmt }}</td>
+            <td><span class="field-role field-denominator">Denominator</span></td>
+          </tr>
+          <tr class="{{ '' if f.interestIncome != null else 'row-missing' }}">
+            <td>Interest Income</td><td class="num">{{ f.interestIncome | numFmt }}</td>
+            <td>{% if f.interestIncome != null %}<span class="field-role field-passive">Passive ✓</span>{% else %}<span class="missing">Not available</span>{% endif %}</td>
+          </tr>
+          <tr class="{{ '' if f.netInvestmentIncome != null else 'row-missing' }}">
+            <td>Net Investment Income</td><td class="num">{{ f.netInvestmentIncome | numFmt }}</td>
+            <td>{% if f.netInvestmentIncome != null %}<span class="field-role field-passive">Passive ✓</span>{% else %}<span class="missing">Not available</span>{% endif %}</td>
+          </tr>
+          <tr class="{{ '' if f.dividendIncome != null else 'row-missing' }}">
+            <td>Dividend Income</td><td class="num">{{ f.dividendIncome | numFmt }}</td>
+            <td>{% if f.dividendIncome != null %}<span class="field-role field-passive">Passive ✓</span>{% else %}<span class="missing">Not available</span>{% endif %}</td>
+          </tr>
+          <tr class="{{ '' if f.realizedGains != null else 'row-missing' }}">
+            <td>Realized Gains</td><td class="num">{{ f.realizedGains | numFmt }}</td>
+            <td>{% if f.realizedGains != null %}<span class="field-role field-passive">Passive ✓</span>{% else %}<span class="missing">Not available</span>{% endif %}</td>
+          </tr>
+          <tr class="{{ '' if f.totalOtherIncomeExpenseNet != null else 'row-missing' }}">
+            <td>Other Income/Expense (Net)</td><td class="num">{{ f.totalOtherIncomeExpenseNet | numFmt }}</td>
+            <td>{% if f.totalOtherIncomeExpenseNet != null %}<span class="field-role field-passive">Passive ✓</span>{% else %}<span class="missing">Not available</span>{% endif %}</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+      <p class="data-missing">No annual income statement data returned by API.</p>
+      {% endif %}
+    </div>
+
+    {# ── 3. Quarterly balance sheet ── #}
+    <div class="card-section">
+      <h3 class="section-heading"><span class="section-num">3</span>Quarterly Balance Sheet</h3>
+      {% if r.quarters and r.quarters.length > 0 %}
+      <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Quarter End</th>
+            <th class="num">Total Assets</th>
+            <th class="num">Cash &amp; Equiv</th>
+            <th class="num">Short-Term Inv.</th>
+            <th class="num">Long-Term Inv.</th>
+            <th class="num highlight-col">Passive Assets</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for q in r.quarters %}
+          <tr>
+            <td><code>{{ q.date or '—' }}</code></td>
+            <td class="num">{{ q.totalAssets | numFmt }}</td>
+            <td class="num">{{ q.cashEquiv | numFmt }}</td>
+            <td class="num">{{ q.shortTerm | numFmt }}</td>
+            <td class="num">{{ q.longTermInvestments | numFmt }}</td>
+            <td class="num highlight-col"><strong>{{ q.passiveAssets | numFmt }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% if r.assetTestResult and r.assetTestResult.totalPassive != null %}
+        <tfoot>
+          <tr>
+            <td><strong>Σ (4 quarters)</strong></td>
+            <td class="num"><strong>{{ r.assetTestResult.totalAssets | numFmt }}</strong></td>
+            <td colspan="3"></td>
+            <td class="num highlight-col"><strong>{{ r.assetTestResult.totalPassive | numFmt }}</strong></td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+      </div>
+      {% if r.quarters.length < 4 %}
+      <p class="data-missing">Only {{ r.quarters.length }} of 4 quarters available. Asset test requires all 4.</p>
+      {% endif %}
+      {% else %}
+      <p class="data-missing">No quarterly balance sheet data returned by API.</p>
+      {% endif %}
+    </div>
+
+    {# ── 4. Income test ── #}
+    <div class="card-section">
+      <h3 class="section-heading"><span class="section-num">4</span>Income Test</h3>
+      {% set it = r.incomeTestResult %}
+      <div class="calc-box">
+        <div class="calc-formula">
+          <span class="formula-text">Passive Income ÷ Total Revenue</span>
+          <span class="formula-threshold">≥ 75% → PFIC Yes</span>
+        </div>
+        {% if it.passiveIncome != null and it.totalRevenue %}
+        <div class="calc-detail">
+          <span class="calc-num">{{ it.passiveIncome | numFmt }}</span>
+          <span class="calc-op">÷</span>
+          <span class="calc-num">{{ it.totalRevenue | numFmt }}</span>
+          <span class="calc-op">=</span>
+          <span class="calc-result-num">{{ it.ratio | pct }}</span>
+        </div>
+        {% endif %}
+        <div class="test-verdict">
+          Result: <span class="test-badge test-{{ it.result }}">{{ it.result | upper | replace('_', ' ') }}</span>
+        </div>
+      </div>
+    </div>
+
+    {# ── 5. Asset test ── #}
+    <div class="card-section">
+      <h3 class="section-heading"><span class="section-num">5</span>Asset Test</h3>
+      {% set at = r.assetTestResult %}
+      <div class="calc-box">
+        <div class="calc-formula">
+          <span class="formula-text">Σ Quarterly Passive Assets ÷ Σ Quarterly Total Assets</span>
+          <span class="formula-threshold">≥ 50% → PFIC Yes</span>
+        </div>
+        {% if at.totalPassive != null and at.totalAssets %}
+        <div class="calc-detail">
+          <span class="calc-num">{{ at.totalPassive | numFmt }}</span>
+          <span class="calc-op">÷</span>
+          <span class="calc-num">{{ at.totalAssets | numFmt }}</span>
+          <span class="calc-op">=</span>
+          <span class="calc-result-num">{{ at.ratio | pct }}</span>
+        </div>
+        {% endif %}
+        <div class="test-verdict">
+          Result: <span class="test-badge test-{{ at.result }}">{{ at.result | upper | replace('_', ' ') }}</span>
+        </div>
+      </div>
+    </div>
+
+    {# ── 6. Missing data notes ── #}
+    {% if r.notes and r.notes.length > 0 %}
+    <div class="card-section card-section-notes">
+      <h3 class="section-heading"><span class="section-num">6</span>Missing Data Notes</h3>
+      <ul class="notes-list">
+        {% for note in r.notes %}<li>{{ note }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {# ── 7. Source ── #}
+    <div class="card-section card-source">
+      <h3 class="section-heading"><span class="section-num">{{ '7' if (r.notes and r.notes.length > 0) else '6' }}</span>Source</h3>
+      <p class="source-line">
+        EODHD Fundamentals API — <code>{{ r.ticker }}</code>
+        {% if r.fromCache %}<span class="cache-note">· cached</span>{% endif %}
+        {% if r.fetchError %}<span class="error-note">· {{ r.fetchError }}</span>{% endif %}
+      </p>
+    </div>
+
+    {# ── 8. Final result footer ── #}
+    <div class="card-result-footer result-footer-{{ r.pficResult }}">
+      <span class="footer-label">Final PFIC Result</span>
+      <strong>{{ resultLabel(r.pficResult) }}</strong>
+    </div>
+
+  </article>
+  {% endfor %}
+  </div>
+</section>
+
+{# ── Structured export modal ──────────────────────────────────────────── #}
+<div id="export-modal" class="modal hidden no-print" role="dialog" aria-modal="true" aria-label="Structured Export">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Export Structured CSV</h2>
+      <button class="modal-close-btn" id="modal-close" aria-label="Close">✕</button>
+    </div>
+    <p class="modal-desc">Manual fields apply to all tickers in the export. Fund Name, Code, and Currency are pre-filled from API data.</p>
+
+    <form id="export-form">
+      <div class="form-grid">
+        <label class="form-field">
+          <span class="field-label">Export Filter</span>
+          <select name="filter">
+            <option value="all">All Results</option>
+            <option value="pfic_yes">PFIC — Yes only</option>
+            <option value="pfic_no">PFIC — No only</option>
+            <option value="unable_to_determine">Unable to Determine only</option>
+            <option value="manual_review">Manual Review only</option>
+            <option value="not_suitable">Not Suitable only</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">Fund Class <span class="optional">optional</span></span>
+          <input type="text" name="fundClass" placeholder="e.g. Class A">
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">PFIC Start Date</span>
+          <input type="date" name="pficStartDate">
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">Account #</span>
+          <input type="text" name="accountNumber" placeholder="e.g. 12345678">
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">Bank Name</span>
+          <input type="text" name="bankName">
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">Bank Address</span>
+          <input type="text" name="bankAddress">
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">Bank City</span>
+          <input type="text" name="bankCity">
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">Bank State/Province</span>
+          <input type="text" name="bankStateProvince">
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">Bank Country</span>
+          <input type="text" name="bankCountry">
+        </label>
+
+        <label class="form-field">
+          <span class="field-label">Ownership %</span>
+          <input type="text" name="ownershipPercent" placeholder="e.g. 100">
+        </label>
+
+        <label class="form-field full-width">
+          <span class="field-label">Additional Notes <span class="optional">appended to PFIC result notes</span></span>
+          <textarea name="notes" rows="2"></textarea>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">Download CSV</button>
+        <button type="button" class="btn btn-ghost" id="modal-close-2">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>const SESSION_ID = "{{ sessionId }}";</script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/exportModal.js"></script>
+{% endblock %}

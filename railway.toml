@@ -1,0 +1,16 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "node src/server.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+
+# Environment variables that MUST be set in the Railway dashboard:
+#   EODHD_API_KEY    = your EODHD API key
+#   DATABASE_PATH    = /data/pfic.db   (matches persistent volume mount path)
+#   NODE_ENV         = production       (skips devDependencies install)
+#   CACHE_TTL_HOURS  = 24
+#   MAX_CONCURRENT   = 5
+#   SESSION_TTL_DAYS = 7

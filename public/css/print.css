@@ -1,0 +1,179 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   PFIC Report — Print / PDF stylesheet
+   Triggered by: window.print()
+───────────────────────────────────────────────────────────────────────────── */
+
+@media print {
+  /* ── Page setup ── */
+  @page {
+    size: A4 portrait;
+    margin: 18mm 15mm 18mm 15mm;
+  }
+
+  /* ── Hide everything UI ── */
+  .no-print,
+  .site-header,
+  .dashboard,
+  .action-bar,
+  #export-modal,
+  .duplicates-panel,
+  .modal {
+    display: none !important;
+  }
+
+  /* ── Reset screen layout ── */
+  body {
+    background: #fff;
+    font-size: 9.5pt;
+    color: #000;
+    font-family: 'Sora', Arial, sans-serif;
+    line-height: 1.5;
+  }
+
+  .main-content { padding: 0; }
+  .cards-section { padding: 0; }
+
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  /* ── Cards ── */
+  .result-card {
+    box-shadow: none;
+    border: 1pt solid #ccc;
+    border-left-width: 5pt;
+    border-radius: 0;
+    margin-bottom: 0;
+    page-break-before: always;
+    break-before: page;
+    overflow: visible;
+  }
+
+  /* First card doesn't need a page break before */
+  .result-card:first-child {
+    page-break-before: avoid;
+    break-before: avoid;
+  }
+
+  /* ── Card header ── */
+  .card-header {
+    background: #f8f8f8 !important;
+    padding: 8pt 10pt;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .card-title h2 { font-size: 12pt; margin-bottom: 3pt; }
+  .card-meta { font-size: 7.5pt; }
+
+  .ticker-badge {
+    background: #222 !important;
+    color: #fff !important;
+    padding: 1pt 4pt;
+    font-size: 7pt;
+  }
+
+  /* ── Stamp ── */
+  .pfic-stamp {
+    font-size: 7pt;
+    padding: 3pt 7pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .pfic-stamp-pfic_yes            { background: #dc2626 !important; color: #fff !important; }
+  .pfic-stamp-pfic_no             { background: #15803d !important; color: #fff !important; }
+  .pfic-stamp-unable_to_determine { background: #b45309 !important; color: #fff !important; }
+  .pfic-stamp-not_suitable        { background: #4b5563 !important; color: #fff !important; }
+  .pfic-stamp-manual_review       { background: #c2410c !important; color: #fff !important; }
+
+  /* ── Sections ── */
+  .card-section {
+    padding: 6pt 10pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .section-heading {
+    font-size: 7pt;
+    margin-bottom: 5pt;
+  }
+
+  .section-num {
+    width: 14px;
+    height: 14px;
+    font-size: 6pt;
+  }
+
+  /* ── Tables ── */
+  .data-table,
+  .info-table {
+    font-size: 8pt;
+    page-break-inside: avoid;
+  }
+
+  .data-table thead th {
+    background: #f0f0f0 !important;
+    font-size: 6.5pt;
+    padding: 3pt 5pt;
+  }
+
+  .data-table td,
+  .info-table th,
+  .info-table td {
+    padding: 3pt 5pt;
+  }
+
+  .table-scroll { overflow: visible; }
+
+  /* ── Calc boxes ── */
+  .calc-box {
+    background: #f8f8f8 !important;
+    border: 0.5pt solid #ccc;
+    padding: 5pt 8pt;
+    page-break-inside: avoid;
+  }
+
+  .formula-text,
+  .calc-num { font-size: 8pt; }
+
+  /* ── Result footer ── */
+  .card-result-footer {
+    padding: 5pt 10pt;
+    font-size: 9pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    page-break-inside: avoid;
+  }
+
+  .result-footer-pfic_yes            { background: #fff1f1 !important; color: #dc2626 !important; }
+  .result-footer-pfic_no             { background: #f0fdf5 !important; color: #15803d !important; }
+  .result-footer-unable_to_determine { background: #fffbeb !important; color: #b45309 !important; }
+  .result-footer-not_suitable        { background: #f3f4f6 !important; color: #4b5563 !important; }
+  .result-footer-manual_review       { background: #fff7ed !important; color: #c2410c !important; }
+
+  /* ── Notes ── */
+  .notes-list li { font-size: 7.5pt; }
+  .card-section-notes { background: #fffbeb !important; }
+
+  /* ── Source section ── */
+  .source-line { font-size: 7pt; color: #666; }
+
+  /* ── Left border colors ── */
+  .result-pfic_yes            { border-left-color: #dc2626 !important; }
+  .result-pfic_no             { border-left-color: #15803d !important; }
+  .result-unable_to_determine { border-left-color: #b45309 !important; }
+  .result-not_suitable        { border-left-color: #4b5563 !important; }
+  .result-manual_review       { border-left-color: #c2410c !important; }
+
+  /* ── Hidden cards should stay hidden ── */
+  .result-card.hidden { display: none !important; }
+
+  /* ── Links: show URLs ── */
+  a[href]::after {
+    content: none;
+  }
+}
